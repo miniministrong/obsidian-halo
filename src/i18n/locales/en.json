@@ -7,6 +7,9 @@
       "name": "Publish to Halo",
       "error_no_matched_site": "The site this document publishes to is not configured"
     },
+    "metadata_generator": {
+      "name": "generator halo metadata"
+    },
     "publish_with_defaults": {
       "name": "Publish to Halo (use default settings)",
       "error_no_default_site": "Please configure the default site first"

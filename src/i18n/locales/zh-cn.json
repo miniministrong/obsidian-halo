@@ -7,6 +7,9 @@
       "name": "发布到 Halo",
       "error_no_matched_site": "此文档发布到的站点未配置"
     },
+    "metadata_generator": {
+      "name": "生成 Halo 元数据"
+    },
     "publish_with_defaults": {
       "name": "发布到 Halo（使用默认配置）",
       "error_no_default_site": "请先配置默认站点"

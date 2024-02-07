@@ -23,6 +23,29 @@ class HaloService {
     };
   }
 
+  public async generateMetadata() {
+    const { activeEditor } = this.app.workspace;
+
+    if (!activeEditor || !activeEditor.file) {
+      return;
+    }
+
+    this.app.fileManager.processFrontMatter(activeEditor.file, (frontmatter) => {
+      frontmatter.title = activeEditor?.file?.basename;
+      frontmatter.author = "汶泽";
+      frontmatter.date = new Date().toISOString();
+      frontmatter.categories = [];
+      frontmatter.tags = [];
+      frontmatter.cover = "";
+      frontmatter.slug = "shortUUID";
+      frontmatter.publish = false;
+      frontmatter.halo = {
+        site: this.site.url,
+        name: randomUUID(),
+      };
+    });
+  }
+
   public async getPost(name: string): Promise<PostRequest | undefined> {
     try {
       const post = await requestUrl({
