@@ -4,8 +4,9 @@ import { HaloSite } from "../settings";
 import markdownIt from "src/utils/markdown";
 import { randomUUID } from "crypto";
 import { readMatter } from "../utils/yaml";
-import { slugify } from "transliteration";
 import i18next from "i18next";
+
+import { SlugGenerateService } from "../utils/slugGenerate";
 
 class HaloService {
   private readonly site: HaloSite;
@@ -109,14 +110,29 @@ class HaloService {
     }
 
     if (matterData?.categories) {
-      const categoryNames = await this.getCategoryNames(matterData.categories);
+      const categoryNames = await this.getCategoryNames(matterData.categories, matterData?.slug, matterData?.date);
       params.post.spec.categories = categoryNames;
     }
 
     if (matterData?.tags) {
-      const tagNames = await this.getTagNames(matterData.tags);
+      const tagNames = await this.getTagNames(matterData.tags, matterData?.slug, matterData?.date);
       params.post.spec.tags = tagNames;
     }
+
+    // 发布时间
+    params.post.spec.publishTime = matterData?.date
+      ? new Date(matterData.date).toISOString()
+      : new Date().toISOString();
+
+    // 是否发布
+    if (matterData?.publish === "false") {
+      params.post.spec.publish = false;
+    } else {
+      params.post.spec.publish = true;
+    }
+
+    // 封面图
+    params.post.spec.cover = matterData?.cover ? matterData.cover : "";
 
     try {
       if (params.post.metadata.name) {
@@ -140,7 +156,7 @@ class HaloService {
       } else {
         params.post.metadata.name = randomUUID();
         params.post.spec.title = matterData?.title || activeEditor.file.basename;
-        params.post.spec.slug = slugify(params.post.spec.title, { trim: true });
+        params.post.spec.slug = SlugGenerateService.getSlug(params.post.spec.title, matterData?.slug, matterData?.date);
 
         const post = await requestUrl({
           url: `${this.site.url}/apis/api.console.halo.run/v1alpha1/posts`,
@@ -154,7 +170,7 @@ class HaloService {
       }
 
       // Publish post
-      if (matterData?.halo?.publish) {
+      if (params.post.spec.publish) {
         await requestUrl({
           url: `${this.site.url}/apis/api.console.halo.run/v1alpha1/posts/${params.post.metadata.name}/publish`,
           method: "PUT",
@@ -273,7 +289,7 @@ class HaloService {
     });
   }
 
-  public async getCategoryNames(displayNames: string[]): Promise<string[]> {
+  public async getCategoryNames(displayNames: string[], slugType?: string, publishTime?: string): Promise<string[]> {
     const allCategories = await this.getCategories();
 
     const notExistDisplayNames = displayNames.filter(
@@ -289,7 +305,7 @@ class HaloService {
         body: JSON.stringify({
           spec: {
             displayName: name,
-            slug: slugify(name, { trim: true }),
+            slug: SlugGenerateService.getSlug(name, "title", publishTime),
             description: "",
             cover: "",
             template: "",
@@ -325,7 +341,7 @@ class HaloService {
       .filter(Boolean) as string[];
   }
 
-  public async getTagNames(displayNames: string[]): Promise<string[]> {
+  public async getTagNames(displayNames: string[], slugType?: string, publishTime?: string): Promise<string[]> {
     const allTags = await this.getTags();
 
     const notExistDisplayNames = displayNames.filter((name) => !allTags.find((item) => item.spec.displayName === name));
@@ -339,7 +355,7 @@ class HaloService {
         body: JSON.stringify({
           spec: {
             displayName: name,
-            slug: slugify(name, { trim: true }),
+            slug: SlugGenerateService.getSlug(name, "title", publishTime),
             color: "#ffffff",
             cover: "",
           },
